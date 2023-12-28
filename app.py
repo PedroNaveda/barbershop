@@ -1,7 +1,6 @@
 from barbershop.models import Peluquero, Servicio, Cliente, Reserva, Base, engine
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
-import smtplib
 from flask import Flask
 from flask_mail import Mail
 
