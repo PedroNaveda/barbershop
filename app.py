@@ -1,10 +1,21 @@
-from models import Peluquero, Servicio, Cliente, Reserva, Base, engine
+from barbershop.models import Peluquero, Servicio, Cliente, Reserva, Base, engine
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import smtplib
+from flask import Flask
+from flask_mail import Mail
 
+app = Flask(__name__)
+
+# Configuración de Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'freelancerock.2017@gmail.com'
+app.config['MAIL_PASSWORD'] = 'gvca*2020'
+
+# Inicializa la extensión
+mail = Mail(app)
 
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
@@ -37,38 +48,18 @@ def verificar_disponibilidad(peluquero_id, fecha_hora):
     citas = session.query(Reserva).filter_by(peluquero_id=peluquero_id, fecha_hora=fecha_hora).all()
     return len(citas) == 0
 
-# Función para enviar notificaciones por email
+from flask_mail import Message
 
-def enviar_confirmacion_email(cliente_id):
-    cliente = session.query(Cliente).filter_by(id=cliente_id).first()
+@app.route('/enviar_confirmacion_email')
+def enviar_confirmacion_email(recipient):
+    mensaje = Message('Asunto del Correo', sender='freelancerock.2017@gmail.com', recipients=[recipient])
+    mensaje.body = 'Correo de confirmacion de cita'
 
-    # Configura los detalles del correo electrónico
-    destinatario = cliente.email
-    asunto = "Confirmación de Cita"
-    cuerpo = f"Hola {cliente.nombre},\n\nTu cita ha sido confirmada. ¡Nos vemos pronto!"
-
-    # Configura los detalles del servidor SMTP
-    servidor_smtp = "smtp.tu_servidor_smtp.com"
-    puerto_smtp = 587
-    usuario_smtp = "tu_usuario"
-    contrasena_smtp = "tu_contrasena"
-
-    # Construye el mensaje
-    mensaje = MIMEMultipart()
-    mensaje['From'] = usuario_smtp
-    mensaje['To'] = destinatario
-    mensaje['Subject'] = asunto
-    mensaje.attach(MIMEText(cuerpo, 'plain'))
-
-    # Intenta enviar el correo electrónico
     try:
-        with smtplib.SMTP(servidor_smtp, puerto_smtp) as servidor:
-            servidor.starttls()
-            servidor.login(usuario_smtp, contrasena_smtp)
-            servidor.sendmail(usuario_smtp, destinatario, mensaje.as_string())
-        print("Correo electrónico de confirmación enviado con éxito.")
+        mail.send(mensaje)
+        return 'Correo enviado con éxito.'
     except Exception as e:
-        print(f"Error al enviar el correo electrónico: {e}")
+        return f'Error al enviar el correo electrónico: {e}'
 
 # Función para marcar citas como completadas
 
@@ -98,7 +89,7 @@ else:
     print("Lo siento, el peluquero está ocupado en ese horario.")
 
 # Enviar confirmación por email (simulado)
-enviar_confirmacion_email(cliente_id=1)
+enviar_confirmacion_email(recipient='freelancerock.2017@gmail.com')
 
 # Marcar cita como completada
 completar_cita(reserva_id=1)
